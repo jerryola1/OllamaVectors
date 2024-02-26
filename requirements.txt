@@ -1,0 +1,8 @@
+bs4
+tiktoken
+langchain 
+langchain-community 
+langchain-core
+chromadb
+PyPDF
+gradio
