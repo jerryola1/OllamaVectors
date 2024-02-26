@@ -10,16 +10,37 @@ from langchain.output_parsers import PydanticOutputParser
 # from langchain_core.prompts import PromptTemplate
 from langchain.text_splitter import CharacterTextSplitter
 import xml.etree.ElementTree as ET
+import requests
 
 def load_urls_from_sitemap(sitemap_path):
     """Load URLs from a sitemap.xml file."""
     tree = ET.parse(sitemap_path)
     root = tree.getroot()
-    namespaces = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}  # Define namespace
-    urls = [url.text for url in root.findall('.//ns:loc', namespaces)]
+    namespaces = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}  
+    urls = [url.text for url in root.findall('ns:url/ns:loc', namespaces)]
     return urls
 
-def process_input(urls, question):
+def load_docs_from_urls(urls):
+    docs = []
+    for url in urls:
+        try:
+            response = requests.get(url)
+            # Check if the request was successful
+            if response.status_code == 200:
+                docs.append(response.text)  # Add the content of the web page to the list
+            else:
+                print(f"Failed to retrieve {url}. Status code: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            print(f"Request failed for {url}. Exception: {e}")
+    return docs
+
+sitemap_path = 'sitemap.xml'  
+urls = load_urls_from_sitemap(sitemap_path)
+
+# Load documents from URLs
+docs = load_docs_from_urls(urls)
+
+def process_input(question):
     model_local = ChatOllama(model="mistral")
 
     # Load urls from sitemap.xml
@@ -27,8 +48,9 @@ def process_input(urls, question):
     # Convert string of urls to list of urls
     # urls = urls.split('\n')
     urls = load_urls_from_sitemap(sitemap_path)
-    
-    docs = [WebBaseLoader(url).load() for url in urls]
+
+    docs = load_docs_from_urls(urls)
+    # docs = [WebBaseLoader(url).load() for url in urls]
     docs_list = [item for sublist in docs for item in sublist]
     # 1. Split data into chunks
     text_splitter = CharacterTextSplitter.from_tiktoken_encoder(chunk_size = 7500, chunk_overlap = 100)
