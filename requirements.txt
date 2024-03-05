@@ -6,3 +6,8 @@ langchain-core
 chromadb
 PyPDF
 gradio
+tensorflow
+torch 
+torchvision
+torchaudio
+transformers

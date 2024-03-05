@@ -10,10 +10,13 @@ from langchain.output_parsers import PydanticOutputParser
 # from langchain_core.prompts import PromptTemplate
 from langchain.text_splitter import CharacterTextSplitter
 import xml.etree.ElementTree as ET
+from transformers import AutoTokenizer, AutoModel
 import requests
 import tensorflow as tf
+import torch
 
 # Add GPU device and use
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device = tf.config.list_physical_devices('GPU')
 
 def load_urls_from_sitemap(sitemap_path):
@@ -44,7 +47,9 @@ urls = load_urls_from_sitemap(sitemap_path)
 # Load documents from URLs
 docs = load_docs_from_urls(urls)
 
-with tf.device('/device:GPU:0'):
+# with tf.device('/device:GPU:0'):
+# with torch.device(device):
+with tf.device("/GPU:0"):
     def process_input(question):
         model_local = ChatOllama(model="mistral")
 
