@@ -15,99 +15,146 @@ import requests
 import tensorflow as tf
 import torch
 
-# Add GPU device and use
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = tf.config.list_physical_devices('GPU')
+# # Add GPU device and use
+# # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = tf.config.list_physical_devices('GPU')
 
-def load_urls_from_sitemap(sitemap_path):
-    """Load URLs from a sitemap.xml file."""
-    tree = ET.parse(sitemap_path)
-    root = tree.getroot()
-    namespaces = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}  
-    urls = [url.text for url in root.findall('ns:url/ns:loc', namespaces)]
-    return urls
+# def load_urls_from_sitemap(sitemap_path):
+#     """Load URLs from a sitemap.xml file."""
+#     tree = ET.parse(sitemap_path)
+#     root = tree.getroot()
+#     namespaces = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}  
+#     urls = [url.text for url in root.findall('ns:url/ns:loc', namespaces)]
+#     return urls
 
-def load_docs_from_urls(urls):
-    docs = []
-    for url in urls:
-        try:
-            response = requests.get(url)
-            # Check if the request was successful
-            if response.status_code == 200:
-                docs.append(response.text)  # Add the content of the web page to the list
-            else:
-                print(f"Failed to retrieve {url}. Status code: {response.status_code}")
-        except requests.exceptions.RequestException as e:
-            print(f"Request failed for {url}. Exception: {e}")
-    return docs
+# def load_docs_from_urls(urls):
+#     docs = []
+#     for url in urls:
+#         try:
+#             response = requests.get(url)
+#             # Check if the request was successful
+#             if response.status_code == 200:
+#                 docs.append(response.text)  # Add the content of the web page to the list
+#             else:
+#                 print(f"Failed to retrieve {url}. Status code: {response.status_code}")
+#         except requests.exceptions.RequestException as e:
+#             print(f"Request failed for {url}. Exception: {e}")
+#     return docs
 
-sitemap_path = 'sitemap.xml'  
-urls = load_urls_from_sitemap(sitemap_path)
+# sitemap_path = 'sitemap.xml'  
+# urls = load_urls_from_sitemap(sitemap_path)
 
-# Load documents from URLs
-docs = load_docs_from_urls(urls)
+# # Load documents from URLs
+# docs = load_docs_from_urls(urls)
 
-# with tf.device('/device:GPU:0'):
-# with torch.device(device):
-with tf.device("/GPU:0"):
-    def process_input(question):
-        model_local = ChatOllama(model="mistral")
+# # with tf.device('/device:GPU:0'):
+# # with torch.device(device):
+# with tf.device("/GPU:0"):
+#     def process_input(question):
+#         model_local = ChatOllama(model="mistral")
 
-        # Load urls from sitemap.xml
-        sitemap_path = "sitemap.xml"
-        # Convert string of urls to list of urls
-        # urls = urls.split('\n')
-        urls = load_urls_from_sitemap(sitemap_path)
+#         # Load urls from sitemap.xml
+#         sitemap_path = "sitemap.xml"
+#         # Convert string of urls to list of urls
+#         # urls = urls.split('\n')
+#         urls = load_urls_from_sitemap(sitemap_path)
 
-        docs = load_docs_from_urls(urls)
-        # docs = [WebBaseLoader(url).load() for url in urls]
-        docs_list = [item for sublist in docs for item in sublist]
-        # 1. Split data into chunks
-        text_splitter = CharacterTextSplitter.from_tiktoken_encoder(chunk_size = 7500, chunk_overlap = 100)
-        doc_splits = text_splitter.split_documents(docs_list)
+#         docs = load_docs_from_urls(urls)
+#         # docs = [WebBaseLoader(url).load() for url in urls]
+#         docs_list = [item for sublist in docs for item in sublist]
+#         # 1. Split data into chunks
+#         text_splitter = CharacterTextSplitter.from_tiktoken_encoder(chunk_size = 7500, chunk_overlap = 100)
+#         doc_splits = text_splitter.split_documents(docs_list)
 
-        # 2. Convert documents to embeddings and store them
-        vectorstore = Chroma.from_documents(
-            documents = doc_splits,
-            collection_name = "rag-chroma",
-            embedding = embeddings.ollama.OllamaEmbeddings(model="nomic-embed-text"),
-        )
+#         # 2. Convert documents to embeddings and store them
+#         vectorstore = Chroma.from_documents(
+#             documents = doc_splits,
+#             collection_name = "rag-chroma",
+#             embedding = embeddings.ollama.OllamaEmbeddings(model="nomic-embed-text"),
+#         )
 
-        retrieval = vectorstore.as_retriever()
-        # retrieval = vectorstore.as_retriever(search_kwargs={"k":1})
+#         retrieval = vectorstore.as_retriever()
+#         # retrieval = vectorstore.as_retriever(search_kwargs={"k":1})
 
-        # 3. Before RAG
-        before_rag_template = "What is {topic}"
-        before_rag_prompt = ChatPromptTemplate.from_template(before_rag_template)
-        before_rag_chain = before_rag_prompt | model_local | StrOutputParser()
-        before_rag_output = before_rag_chain.invoke({"topic": "Ollama"})
+#         # 3. Before RAG
+#         before_rag_template = "What is {topic}"
+#         before_rag_prompt = ChatPromptTemplate.from_template(before_rag_template)
+#         before_rag_chain = before_rag_prompt | model_local | StrOutputParser()
+#         before_rag_output = before_rag_chain.invoke({"topic": "Ollama"})
 
-        # 4. After RAG
-        after_rag_template = """Answer the question based only on the following context:
-        {context}
-        Question: {question}
-        """
+#         # 4. After RAG
+#         after_rag_template = """Answer the question based only on the following context:
+#         {context}
+#         Question: {question}
+#         """
 
-        after_rag_prompt = ChatPromptTemplate.from_template(after_rag_template)
-        after_rag_chain = (
-            {"context": retrieval, "question": RunnablePassthrough()}
-            | after_rag_prompt
-            | model_local
-            | StrOutputParser()
-        )
-        after_rag_output = after_rag_chain.invoke({question})
+#         after_rag_prompt = ChatPromptTemplate.from_template(after_rag_template)
+#         after_rag_chain = (
+#             {"context": retrieval, "question": RunnablePassthrough()}
+#             | after_rag_prompt
+#             | model_local
+#             | StrOutputParser()
+#         )
+#         after_rag_output = after_rag_chain.invoke({question})
 
-        return before_rag_output, after_rag_output
+#         return before_rag_output, after_rag_output
 
-    # Define gradio interface
-    iface = gr.Interface(
-        fn=process_input,
-        inputs=[
-            # gr.Textbox(label="|Enter URLs sepretated by new lines"),
-            gr.Textbox(label="Question")
-        ],
-        outputs="text",
-        title="Document Query with Ollama",
-        description="Enter the URLs of the documents you want to query and ask a question about the content."
-    )
-    iface.launch()
+#     # Define gradio interface
+#     iface = gr.Interface(
+#         fn=process_input,
+#         inputs=[
+#             gr.Textbox(label="|Enter URLs sepretated by new lines"),
+#             gr.Textbox(label="Question")
+#         ],
+#         outputs="text",
+#         title="Document Query with Ollama",
+#         description="Enter the URLs of the documents you want to query and ask a question about the content."
+#     )
+#     iface.launch()
+
+
+model_local = ChatOllama(model="mistral")
+
+# 1. Split data into chunks
+urls = [
+    "https://www.gov.uk/skilled-worker-visa",
+    "https://ollama.com/blog/windows-preview",
+    "https://ollama.com/blog/openai-compatibility",
+]
+docs = [WebBaseLoader(url).load() for url in urls]
+docs_list = [item for sublist in docs for item in sublist]
+text_splitter = CharacterTextSplitter.from_tiktoken_encoder(chunk_size=7500, chunk_overlap=100)
+doc_splits = text_splitter.split_documents(docs_list)
+
+# 2. Convert documents to Embeddings and store them
+vectorstore = Chroma.from_documents(
+    documents=doc_splits,
+    collection_name="rag-chroma",
+    embedding=embeddings.ollama.OllamaEmbeddings(model='nomic-embed-text'),
+)
+retriever = vectorstore.as_retriever()
+
+# 3. Before RAG
+print("Before RAG\n")
+before_rag_template = "What is {topic}"
+before_rag_prompt = ChatPromptTemplate.from_template(before_rag_template)
+before_rag_chain = before_rag_prompt | model_local | StrOutputParser()
+print(before_rag_chain.invoke({"topic": "Ollama"}))
+
+# 4. After RAG
+print("\n########\nAfter RAG\n")
+after_rag_template = """Answer the question based only on the following context:
+{context}
+Question: {question}
+"""
+after_rag_prompt = ChatPromptTemplate.from_template(after_rag_template)
+after_rag_chain = (
+    {"context": retriever, "question": RunnablePassthrough()}
+    | after_rag_prompt
+    | model_local
+    | StrOutputParser()
+)
+print(after_rag_chain.invoke("What is Ollama?"))
+
+# loader = PyPDFLoader("Ollama.pdf")
+# doc_splits = loader.load_and_split()
