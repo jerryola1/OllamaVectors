@@ -9,17 +9,17 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from langchain.text_splitter import CharacterTextSplitter
 
-# Extract relevant information from the scraped data
-extracted_data = []
-for split in splits:
-    extracted = extraction_chain.run(split.page_content)
-    extracted_data.append(extracted)
+# # Extract relevant information from the scraped data
+# extracted_data = []
+# for split in splits:
+#     extracted = extraction_chain.run(split.page_content)
+#     extracted_data.append(extracted)
 
-# Print the extracted data
-for data in extracted_data:
-    print("Title:", data.get("title"))
-    print("Content:", data.get("content"))
-    print("---")
+# # Print the extracted data
+# for data in extracted_data:
+#     print("Title:", data.get("title"))
+#     print("Content:", data.get("content"))
+#     print("---")
 
 def process_input(urls, question):
     model_local = ChatOllama(model="mistral")
